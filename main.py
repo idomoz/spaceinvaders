@@ -36,7 +36,6 @@ def shots_manager():
         shots = list(filter(move_shot, shots))
         time.sleep(0.01)
 
-
 def mouse_handler():
     while True:
         try:

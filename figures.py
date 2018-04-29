@@ -155,6 +155,7 @@ class Shot(Figure):
             self.x = x
             self.y = y
 
+
     def move(self):
         self.print(erase=True)
         self.y = max(0, self.y - 1)
