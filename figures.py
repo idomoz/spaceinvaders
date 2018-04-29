@@ -84,7 +84,7 @@ $Bg $ $Bg $ $BG $ $Bw $ $Bw $ $By $ $BY $ $Br $ $Br $ $BR $
 class Spaceship(Figure):
     img = '''
  $GB^$
-$GB/$$RB*$$GB\\$
+$GB/$$RB*$$GB\$
  $LB"$
     '''[1:-1]
 
@@ -146,7 +146,16 @@ class Bat(Figure):
 class Shot(Figure):
     img = '$wm\'$'
 
-    def __init__(self):
+    def __init__(self, spaceship=None, x=0, y=0):
         super().__init__()
-        self.x = random.randint(0, max_width)
-        self.y = 1
+        if spaceship:
+            self.x = min(spaceship.x + 1, max_width)
+            self.y = max(spaceship.y - 1, 1)
+        else:
+            self.x = x
+            self.y = y
+
+    def move(self):
+        self.print(erase=True)
+        self.y = max(0, self.y - 1)
+        self.print(erase=False if self.y else True)

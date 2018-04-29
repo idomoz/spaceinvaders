@@ -33,7 +33,7 @@ def clear():
 def print_at(st, x, y, fore_color, back_color):
     h = windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
     windll.kernel32.SetConsoleCursorPosition(h, COORD(0, 0))
-    print(getattr(Fore, fore_color, Fore.WHITE) + getattr(Back, back_color, Back.BLACK) + '\r')
+    print(getattr(Fore, fore_color) + getattr(Back, back_color) + '\r')
     windll.kernel32.SetConsoleCursorPosition(h, COORD(x, y))
     c = st.encode("windows-1252")
     windll.kernel32.WriteConsoleA(h, c_char_p(c), len(c), None, None)
