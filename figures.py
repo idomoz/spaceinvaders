@@ -43,7 +43,7 @@ class Figure:
         y = self.y
         del_y = 0
         img_right = x + self.right_size
-        img_bottom = y + len(self.rows) + 1
+        img_bottom = y + len(self.rows) - 1
         if img_right > max_width:
             x -= img_right - max_width
         if img_bottom > max_height:
@@ -84,7 +84,7 @@ $Bg $ $Bg $ $BG $ $Bw $ $Bw $ $By $ $BY $ $Br $ $Br $ $BR $
 class Spaceship(Figure):
     img = '''
  $GB^$
-$GB/$$RB*$$GB\$
+$GB/$$Rl*$$GB\$
  $LB"$
     '''[1:-1]
 
@@ -102,11 +102,10 @@ $GB/$$RB*$$GB\$
         pass
 
     def move(self, x, y):
-        if x != self.x or y != self.y:
-            self.print(erase=True)
-            self.x = x
-            self.y = y
-            self.print()
+        self.print(erase=True)
+        self.x = x
+        self.y = max(1, y)
+        self.print()
 
 
 class LifePack(Figure):
@@ -149,14 +148,14 @@ class Shot(Figure):
     def __init__(self, spaceship=None, x=0, y=0):
         super().__init__()
         if spaceship:
-            self.x = min(spaceship.x + 1, max_width)
-            self.y = max(spaceship.y - 1, 1)
+            self.x = min(spaceship.x + 1, max_width - 2)
+            self.y = min(max_height - 4, max(spaceship.y - 1, 1))
         else:
             self.x = x
             self.y = y
 
-
     def move(self):
         self.print(erase=True)
-        self.y = max(0, self.y - 1)
-        self.print(erase=False if self.y else True)
+        self.y = max(0, self.y - 2)
+        if self.y:
+            self.print()
