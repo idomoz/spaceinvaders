@@ -159,3 +159,67 @@ class Shot(Figure):
         self.y = max(0, self.y - 2)
         if self.y:
             self.print()
+
+
+class Chicken(Figure):
+    img = ''
+    right_up = '''
+(\  }\  
+(  \_('> 
+(__(=_)  
+   -"= 
+'''[1:-1]
+    right_down = '''
+    }\  
+ ____('> 
+(  /=_)  
+(/ -"= 
+'''[1:-1]
+    left_up = '''
+  /{  /)
+<')_/  )
+ (_=)__)
+  ="-   
+'''[1:-1]
+    left_down = '''
+  /{  
+<')____
+ (_=\  )
+  ="- \)  
+'''[1:-1]
+
+    def __init__(self):
+        super().__init__()
+        self.direction = 'right'
+        self.x = random.randint(0, 30) * 8
+        self.y = random.randint(0, 5) * 4
+        self.phase = 'up'
+        self.img = getattr(self, '{}_{}'.format(self.direction, self.phase))
+        self.print(reload=True)
+
+    def move(self):
+        self.print(erase=True)
+        self.x += 1 if self.direction == 'right' else -1
+        if self.x >= max_width - 9:
+            self.direction = 'left'
+        if self.x == 0:
+            self.direction = 'right'
+        self.img = getattr(self, '{}_{}'.format(self.direction, self.phase))
+        self.phase = 'down' if self.phase == 'up' else 'up'
+        self.print(reload=True)
+
+
+class Egg(Figure):
+    img = '0'
+
+    def __init__(self, chicken):
+        super().__init__()
+        self.x = chicken.x + 2
+        self.y = chicken.y + 8
+        self.print()
+
+    def move(self):
+        self.print(erase=True)
+        self.y += 1
+        if self.y < max_height:
+            self.print()

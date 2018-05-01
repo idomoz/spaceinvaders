@@ -4,6 +4,7 @@ from threading import Thread
 from queue import Queue
 from msvcrt import getch
 import time
+import random
 import socket
 from sys import argv
 
@@ -23,9 +24,14 @@ scr_height -= header + footer
 
 # initialize game
 from figures import *
+
 player = Spaceship()
 ally = Spaceship()
 shots = []
+enemies = []
+eggs = []
+for i in range(10):
+    enemies.append(Chicken())
 
 # setup connection
 if len(argv) == 1:
@@ -33,18 +39,35 @@ if len(argv) == 1:
 else:
     hosting = False
     host_ip = argv[1]
-tcp_socket = socket.socket()
+multiplayer = False
+udp_address = None
+tcp_socket = None
+
+
+def accept_guest():
+    host_tcp_socket = socket.socket()
+    host_tcp_socket.bind(('0.0.0.0', 6000))
+    host_tcp_socket.listen()
+    global udp_address, tcp_socket, multiplayer
+    while True:
+        if not multiplayer:
+            tcp_socket, guest_address = host_tcp_socket.accept()
+            udp_address = (guest_address[0], 6001)
+            multiplayer = True
+        else:
+            time.sleep(1)
+
+
 if hosting:
-    print('waiting for guest...')
-    tcp_socket.bind(('0.0.0.0', 6000))
-    tcp_socket.listen()
-    guest_socket, guest_address = tcp_socket.accept()
-    udp_address = (guest_address[0], 6001)
-    tcp_socket.close()
-    tcp_socket = guest_socket
+    t = Thread(target=accept_guest)
+    t.daemon = True
+    t.start()
 else:
-    tcp_socket.connect((host_ip, 6000))
-    udp_address = (host_ip, 6001)
+    tcp_socket = socket.socket()
+    while not multiplayer:
+        tcp_socket.connect((host_ip, 6000))
+        udp_address = (host_ip, 6001)
+        multiplayer = True
 console.clear()
 udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udp_socket.bind(('0.0.0.0', 6001))
@@ -53,12 +76,13 @@ tcp_queue = Queue()
 
 
 def tcp_queue_manager():
+    global multiplayer
     while True:
         data = tcp_queue.get()
         try:
             tcp_socket.send(data)
         except ConnectionResetError:
-            pass
+            multiplayer = False
         tcp_queue.task_done()
 
 
@@ -68,11 +92,8 @@ def udp_queue_manager():
         try:
             udp_socket.sendto(data, udp_address)
         except ConnectionResetError:
-            pass
+            print('err send')
         udp_queue.task_done()
-
-
-
 
 
 def movement_handler():
@@ -86,10 +107,8 @@ def movement_handler():
         pos_x, pos_y = int((pos_x / scr_width) * win_width), int((pos_y / scr_height) * win_height)
         if player.x != pos_x or player.y != pos_y:
             player.move(pos_x, pos_y)
-            try:
+            if multiplayer:
                 udp_queue.put('{},{},{}$'.format(0, player.x, player.y).encode())
-            except ConnectionResetError:
-                pass
         time.sleep(0.02)
 
 
@@ -108,16 +127,20 @@ def receive_udp():
 
 
 def receive_tcp():
+    global multiplayer
     while True:
-        try:
-            data_list = tcp_socket.recv(1024)[0].decode()[:-1].split('$')
-            for i, data in enumerate(data_list):
-                if data[0] == '0':
-                    pass
-                elif data[0] == '1':
-                    pass
-        except ConnectionResetError:
-            pass
+        if multiplayer:
+            try:
+                data_list = tcp_socket.recv(1024)[0].decode()[:-1].split('$')
+                for i, data in enumerate(data_list):
+                    if data[0] == '0':
+                        pass
+                    elif data[0] == '1':
+                        pass
+            except ConnectionResetError:
+                multiplayer = False
+        else:
+            time.sleep(1)
 
 
 def add_shot(spaceship):
@@ -138,8 +161,30 @@ def shots_manager():
         time.sleep(0.02)
 
 
+def move_enemies():
+    while True:
+        for enemy in enemies:
+            enemy.move()
+            if random.randint(0, 500) == 0:
+                eggs.append(Egg(enemy))
+        time.sleep(0.1)
+
+
+def move_egg(egg):
+    egg.move()
+    return egg.y != max_height
+
+
+def move_eggs():
+    global eggs
+    while True:
+        eggs = list(filter(move_egg, eggs))
+        time.sleep(0.1)
+
+
 # start threads
-for func in [shots_manager, movement_handler, receive_udp, receive_tcp, udp_queue_manager, tcp_queue_manager]:
+for func in [shots_manager, movement_handler, receive_udp, receive_tcp, udp_queue_manager, tcp_queue_manager,
+             move_enemies, move_eggs]:
     t = Thread(target=func)
     t.daemon = True
     t.start()
@@ -148,9 +193,10 @@ while True:
     ch = getch()
     if ch == b' ':
         add_shot(player)
-        udp_queue.put('{}$'.format(1).encode())
+        if multiplayer:
+            udp_queue.put('{}$'.format(1).encode())
     if ch == b'\x03':
         udp_socket.close()
         tcp_socket.close()
         exit()
-    time.sleep(0.02)
+    time.sleep(0.04)
