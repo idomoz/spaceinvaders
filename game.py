@@ -121,7 +121,9 @@ def receive_udp():
                 if data[0] == '0':
                     ally.move(int(data[1]), int(data[2]))
                 elif data[0] == '1':
-                    add_shot(ally)
+                    shot = ally.shoot()
+                    if shot is not None:
+                        shots.append(shot)
         except ConnectionResetError:
             pass
 
@@ -141,12 +143,6 @@ def receive_tcp():
                 multiplayer = False
         else:
             time.sleep(1)
-
-
-def add_shot(spaceship):
-    shot = Shot(spaceship)
-    shots.append(shot)
-    shot.print()
 
 
 def move_shot(shot):
@@ -182,9 +178,16 @@ def move_eggs():
         time.sleep(0.1)
 
 
+def cool_down():
+    while True:
+        player.heat.change_heat(heat_up=False)
+        ally.heat.change_heat(heat_up=False)
+        time.sleep(0.7)
+
+
 # start threads
 for func in [shots_manager, movement_handler, receive_udp, receive_tcp, udp_queue_manager, tcp_queue_manager,
-             move_enemies, move_eggs]:
+             move_enemies, move_eggs, cool_down]:
     t = Thread(target=func)
     t.daemon = True
     t.start()
@@ -192,10 +195,12 @@ for func in [shots_manager, movement_handler, receive_udp, receive_tcp, udp_queu
 while True:
     ch = getch()
     if ch == b' ':
-        add_shot(player)
-        if multiplayer:
-            udp_queue.put('{}$'.format(1).encode())
-    if ch == b'\x03':
+        shot = player.shoot()
+        if shot is not None:
+            shots.append(shot)
+            if multiplayer:
+                udp_queue.put('{}$'.format(1).encode())
+    elif ch == b'\x03':
         udp_socket.close()
         tcp_socket.close()
         exit()

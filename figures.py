@@ -68,17 +68,35 @@ class Figure:
 
 class Heat(Figure):
     img = ''
+    full_img = '''
+$Bg $ $Bg $ $BG $ $Bw $ $Bw $ $By $ $BY $ $Br $ $Br $ $BR $
+'''[1:-1]
 
     def __init__(self):
         super().__init__()
         self.x, self.y = 5, 0
-        self.full_img = '''
-$Bg $ $Bg $ $BG $ $Bw $ $Bw $ $By $ $BY $ $Br $ $Br $ $BR $
-'''[1:-1]
+        self.heat = 0.0
+        self.heated = False
 
-    def print_heat(self, heat):
-        self.img = self.full_img[:heat * 6]
+    def change_heat(self, heat_up=True, heat_up_value=0.1):
+        old_heat = self.heat
+        self.heat = min(self.heat + heat_up_value, 10) if heat_up else max(self.heat - 1, 0)
+        if self.heat == 0:
+            self.heated = False
+        if self.heat == 10:
+            self.heated = True
+        if int(old_heat) != int(self.heat):
+            if not heat_up:
+                self.erase()
+            self.print()
+
+    def print(self):
+        self.img = self.full_img[:int(self.heat) * 6]
         super().print(reload=True)
+
+    def erase(self):
+        self.img = self.full_img[:60]
+        super().print(erase=True, reload=True)
 
 
 class Spaceship(Figure):
@@ -87,6 +105,10 @@ class Spaceship(Figure):
 $GB/$$Rl*$$GB\$
  $LB"$
     '''[1:-1]
+    shot_heat_map = {
+        'A': 0.1,
+        'B': 0.2,
+    }
 
     def __init__(self):
         super().__init__()
@@ -96,16 +118,21 @@ $GB/$$Rl*$$GB\$
         self.shot_type = 'A'
         self.missiles = 0
         self.score = 0
-        self.heat = 10
-
-    def shoot(self):
-        pass
+        self.heat = Heat()
+        self.heated = False
 
     def move(self, x, y):
         self.print(erase=True)
         self.x = x
         self.y = max(1, y)
         self.print()
+
+    def shoot(self):
+        if not self.heat.heated:
+            shot = Shot(self)
+            shot.print()
+            self.heat.change_heat(heat_up_value=self.shot_heat_map[self.shot_type])
+            return shot
 
 
 class LifePack(Figure):
@@ -145,14 +172,11 @@ class Bat(Figure):
 class Shot(Figure):
     img = '$wm\'$'
 
-    def __init__(self, spaceship=None, x=0, y=0):
+    def __init__(self, spaceship):
         super().__init__()
-        if spaceship:
-            self.x = min(spaceship.x + 1, max_width - 2)
-            self.y = min(max_height - 4, max(spaceship.y - 1, 1))
-        else:
-            self.x = x
-            self.y = y
+        self.player_id = id(spaceship)
+        self.x = min(spaceship.x + 1, max_width - 2)
+        self.y = min(max_height - 4, max(spaceship.y - 1, 1))
 
     def move(self):
         self.print(erase=True)
@@ -192,7 +216,7 @@ class Chicken(Figure):
         super().__init__()
         self.direction = 'right'
         self.x = random.randint(0, 30) * 8
-        self.y = random.randint(0, 5) * 4
+        self.y = random.randint(1, 5) * 4
         self.phase = 'up'
         self.img = getattr(self, '{}_{}'.format(self.direction, self.phase))
         self.print(reload=True)
@@ -202,6 +226,7 @@ class Chicken(Figure):
         self.x += 1 if self.direction == 'right' else -1
         if self.x >= max_width - 9:
             self.direction = 'left'
+            self.x = max_width - 9
         if self.x == 0:
             self.direction = 'right'
         self.img = getattr(self, '{}_{}'.format(self.direction, self.phase))
