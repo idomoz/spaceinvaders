@@ -100,5 +100,8 @@ ENV/
 # mypy
 .mypy_cache/
 
-#PyCharm
+# PyCharm
 .idea/
+
+# Batch files
+copy.bat

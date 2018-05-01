@@ -72,16 +72,7 @@ def udp_queue_manager():
         udp_queue.task_done()
 
 
-def move_shot(shot):
-    shot.move()
-    return shot.y != 0
 
-
-def shots_manager():
-    while True:
-        global shots
-        shots = list(filter(move_shot, shots))
-        time.sleep(0.02)
 
 
 def movement_handler():
@@ -102,21 +93,53 @@ def movement_handler():
         time.sleep(0.02)
 
 
-def receive_channel():
+def receive_udp():
     while True:
         try:
-            data = udp_socket.recvfrom(1024)[0].decode()[:-1].split('$')[0]
-            data = data.split(',')
-            if data[0] == '0':
-                ally.move(int(data[1]), int(data[2]))
-            elif data[0] == '1':
-                pass
+            data_list = udp_socket.recvfrom(1024)[0].decode()[:-1].split('$')
+            for i, data in enumerate(data_list):
+                data = data.split(',')
+                if data[0] == '0':
+                    ally.move(int(data[1]), int(data[2]))
+                elif data[0] == '1':
+                    add_shot(ally)
         except ConnectionResetError:
             pass
 
 
+def receive_tcp():
+    while True:
+        try:
+            data_list = tcp_socket.recv(1024)[0].decode()[:-1].split('$')
+            for i, data in enumerate(data_list):
+                if data[0] == '0':
+                    pass
+                elif data[0] == '1':
+                    pass
+        except ConnectionResetError:
+            pass
+
+
+def add_shot(spaceship):
+    shot = Shot(spaceship)
+    shots.append(shot)
+    shot.print()
+
+
+def move_shot(shot):
+    shot.move()
+    return shot.y != 0
+
+
+def shots_manager():
+    while True:
+        global shots
+        shots = list(filter(move_shot, shots))
+        time.sleep(0.02)
+
+
 # start threads
-for func in [shots_manager, movement_handler, receive_channel, udp_queue_manager, tcp_queue_manager]:
+for func in [shots_manager, movement_handler, receive_udp, receive_tcp, udp_queue_manager, tcp_queue_manager]:
     t = Thread(target=func)
     t.daemon = True
     t.start()
@@ -124,10 +147,8 @@ for func in [shots_manager, movement_handler, receive_channel, udp_queue_manager
 while True:
     ch = getch()
     if ch == b' ':
-        shot = Shot(player)
-        shots.append(shot)
-        shot.print()
-
+        add_shot(player)
+        udp_queue.put('{}$'.format(1).encode())
     if ch == b'\x03':
         udp_socket.close()
         tcp_socket.close()

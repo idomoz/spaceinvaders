@@ -51,7 +51,7 @@ class Figure:
         for row in self.rows:
             del_x = 0
             words = row.split('$')
-            for word, i in zip(words, range(len(words))):
+            for i, word in enumerate(words):
                 if i % 2:
                     fore_color = color_map[word[0]] if not erase else 'WHITE'
                     back_color = color_map[word[1]] if not erase else 'BLACK'
