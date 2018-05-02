@@ -9,7 +9,6 @@ import network
 # initialize screen
 cursor.hide()
 console.maximize_console()
-console.clear()
 header = 23
 footer = 43
 try:
@@ -51,7 +50,20 @@ def movement_handler():
 
 def move_shot(shot):
     shot.move()
-    return shot.y != 0
+    coliding = False
+    enemy_to_remove = None
+    for enemy in enemies:
+        if shot.is_colliding(enemy):
+            shot.print(erase=True)
+            coliding = True
+            enemy.hp -= shot.dp
+            if enemy.hp < 0:
+                enemy_to_remove = enemy
+            break
+    if enemy_to_remove is not None:
+        enemy_to_remove.print(erase=True)
+        enemies.remove(enemy_to_remove)
+    return shot.y != 0 and not coliding
 
 
 def shots_manager():

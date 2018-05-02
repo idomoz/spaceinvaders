@@ -16,6 +16,7 @@ windll.kernel32.GetLargestConsoleWindowSize.argtypes = (wintypes.HANDLE,)
 windll.user32.ShowWindow.argtypes = (wintypes.HWND, c_int)
 STD_OUTPUT_HANDLE = -11
 init()
+os.system('cls')
 
 
 class COORD(Structure):
@@ -24,10 +25,6 @@ class COORD(Structure):
 
 class POINT(Structure):
     _fields_ = [("x", c_long), ("y", c_long)]
-
-
-def clear():
-    os.system('cls')
 
 
 def print_at(st, x, y, fore_color, back_color):

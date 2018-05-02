@@ -1,7 +1,6 @@
 import socket
 from queue import Queue
 import time
-import console
 from threading import Thread
 
 udp_queue = Queue()

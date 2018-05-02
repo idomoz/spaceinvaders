@@ -25,16 +25,28 @@ color_map = {
     'y': 'LIGHTYELLOW_EX'
 }
 
+shot_map = {
+    'A': {'heat': 0.1, 'dp': 1},
+    'B': {'heat': 0.2, 'dp': 1.1},
+}
+
 
 class Figure:
     def __init__(self):
         self.rows = None
-        self.right_size = None
+        self.width = None
+        self.height = None
         self.calc_img()
 
     def calc_img(self):
         self.rows = self.img.split('\n')
-        self.right_size = max(len(row) - row.count('$') * 2 for row in self.rows)
+        self.width = max(len(row) - row.count('$') * 2 for row in self.rows)
+        self.height = len(self.rows)
+
+    def is_colliding(self, other):
+        return abs((self.x + self.width / 2) - (other.x + other.width / 2)) <= (
+                    self.width + other.width) / 2 and abs(
+            (self.y + self.height / 2) - (other.y + other.height / 2)) <= (self.height + other.height) / 2
 
     def print(self, erase=False, reload=False):
         if reload:
@@ -42,7 +54,7 @@ class Figure:
         x = self.x
         y = self.y
         del_y = 0
-        img_right = x + self.right_size
+        img_right = x + self.width
         img_bottom = y + len(self.rows) - 1
         if img_right > max_width:
             x -= img_right - max_width
@@ -80,7 +92,8 @@ $Bg $ $Bg $ $BG $ $Bw $ $Bw $ $By $ $BY $ $Br $ $Br $ $BR $
 
     def change_heat(self, heat_up=True, heat_up_value=0.1):
         old_heat = self.heat
-        self.heat = min(self.heat + heat_up_value, 10.9) if heat_up else max(self.heat - 0.1, 0)
+        cool_down_val = 0.1 + (0.075 if self.heated else 0)
+        self.heat = min(self.heat + heat_up_value, 10.9) if heat_up else max(self.heat - cool_down_val, 0)
         if self.heat == 0:
             self.heated = False
         if self.heat == 10.9:
@@ -99,16 +112,13 @@ $Bg $ $Bg $ $BG $ $Bw $ $Bw $ $By $ $BY $ $Br $ $Br $ $BR $
         super().print(erase=True, reload=True)
 
 
+
 class Spaceship(Figure):
     img = '''
  $GB^$
 $GB/$$Rl*$$GB\$
  $LB"$
     '''[1:-1]
-    shot_heat_map = {
-        'A': 0.1,
-        'B': 0.2,
-    }
 
     def __init__(self):
         super().__init__()
@@ -116,6 +126,7 @@ $GB/$$Rl*$$GB\$
         self.lives = 5
         self.power = 1
         self.shot_type = 'A'
+        self.shot_level = 0
         self.missiles = 0
         self.score = 0
         self.heat = Heat()
@@ -129,10 +140,10 @@ $GB/$$Rl*$$GB\$
 
     def shoot(self, heat_up=False):
         if not self.heat.heated:
-            shot = Shot(self)
+            shot = Shot(self, self.shot_type)
             shot.print()
             if heat_up:
-                self.heat.change_heat(heat_up_value=self.shot_heat_map[self.shot_type])
+                self.heat.change_heat(heat_up_value=shot_map[self.shot_type]['heat'])
             return shot
 
 
@@ -154,27 +165,13 @@ class PowerPack(Figure):
         self.y = 1
 
 
-class Bat(Figure):
-    img = ''
-
-    def __init__(self):
-        super().__init__()
-        self.x = random.randint(0, max_width)
-        self.y = 1
-        self.full_img = '$YBv$$YBV$'
-        self.phase = 0
-
-    def print(self):
-        self.img = self.full_img[self.phase: 5 + self.phase]
-        self.phase = 5 - self.phase
-        super().print(reload=True)
-
-
 class Shot(Figure):
     img = '$wm\'$'
 
-    def __init__(self, spaceship):
+    def __init__(self, spaceship, shot_type):
         super().__init__()
+        self.shot_type = shot_type
+        self.dp = shot_map[shot_type]['dp']
         self.player_id = id(spaceship)
         self.x = min(spaceship.x + 1, max_width - 2)
         self.y = min(max_height - 4, max(spaceship.y - 1, 1))
@@ -186,39 +183,45 @@ class Shot(Figure):
             self.print()
 
 
-class Chicken(Figure):
+class Enemy(Figure):
+    def __init__(self, hp):
+        super().__init__()
+        self.hp = hp
+
+
+class Chicken(Enemy):
     img = ''
     right_up = '''
-(\  }\  
-(  \_('> 
-(__(=_)  
-   -"= 
+(\  $RB}\$
+(  \_('$yB>$ 
+(__(=_)
+   $yB-"=$
 '''[1:-1]
     right_down = '''
-    }\  
- ____('> 
-(  /=_)  
-(/ -"= 
+    $RB}\$
+  ___('$yB>$ 
+ (  /_)
+ (/$yB-"=$
 '''[1:-1]
     left_up = '''
-  /{  /)
-<')_/  )
+  $RB/{$  /)
+$yB<$')_/  )
  (_=)__)
-  ="-   
+  $yB="-$
 '''[1:-1]
     left_down = '''
-  /{  
-<')____
- (_=\  )
-  ="- \)  
+  $RB/{$
+$yB<$')___
+ (_\  )
+  $yB="-$\)
 '''[1:-1]
 
     def __init__(self):
-        super().__init__()
+        super().__init__(5)
         self.direction = 'right'
         self.x = random.randint(0, 30) * 8
         self.y = random.randint(1, 5) * 4
-        self.phase = 'up'
+        self.phase = 'up' if random.randint(0, 1) else 'down'
         self.img = getattr(self, '{}_{}'.format(self.direction, self.phase))
         self.print(reload=True)
 
