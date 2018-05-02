@@ -80,10 +80,10 @@ $Bg $ $Bg $ $BG $ $Bw $ $Bw $ $By $ $BY $ $Br $ $Br $ $BR $
 
     def change_heat(self, heat_up=True, heat_up_value=0.1):
         old_heat = self.heat
-        self.heat = min(self.heat + heat_up_value, 10) if heat_up else max(self.heat - 1, 0)
+        self.heat = min(self.heat + heat_up_value, 10.9) if heat_up else max(self.heat - 0.1, 0)
         if self.heat == 0:
             self.heated = False
-        if self.heat == 10:
+        if self.heat == 10.9:
             self.heated = True
         if int(old_heat) != int(self.heat):
             if not heat_up:
@@ -127,11 +127,12 @@ $GB/$$Rl*$$GB\$
         self.y = max(1, y)
         self.print()
 
-    def shoot(self):
+    def shoot(self, heat_up=False):
         if not self.heat.heated:
             shot = Shot(self)
             shot.print()
-            self.heat.change_heat(heat_up_value=self.shot_heat_map[self.shot_type])
+            if heat_up:
+                self.heat.change_heat(heat_up_value=self.shot_heat_map[self.shot_type])
             return shot
 
 

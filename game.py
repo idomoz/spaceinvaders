@@ -1,12 +1,10 @@
 import console
 import cursor
 from threading import Thread
-from queue import Queue
 from msvcrt import getch
-import time
-import random
-import socket
 from sys import argv
+import time
+import network
 
 # initialize screen
 cursor.hide()
@@ -32,68 +30,7 @@ enemies = []
 eggs = []
 for i in range(10):
     enemies.append(Chicken())
-
-# setup connection
-if len(argv) == 1:
-    hosting = True
-else:
-    hosting = False
-    host_ip = argv[1]
-multiplayer = False
-udp_address = None
-tcp_socket = None
-
-
-def accept_guest():
-    host_tcp_socket = socket.socket()
-    host_tcp_socket.bind(('0.0.0.0', 6000))
-    host_tcp_socket.listen()
-    global udp_address, tcp_socket, multiplayer
-    while True:
-        if not multiplayer:
-            tcp_socket, guest_address = host_tcp_socket.accept()
-            udp_address = (guest_address[0], 6001)
-            multiplayer = True
-        else:
-            time.sleep(1)
-
-
-if hosting:
-    t = Thread(target=accept_guest)
-    t.daemon = True
-    t.start()
-else:
-    tcp_socket = socket.socket()
-    while not multiplayer:
-        tcp_socket.connect((host_ip, 6000))
-        udp_address = (host_ip, 6001)
-        multiplayer = True
-console.clear()
-udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-udp_socket.bind(('0.0.0.0', 6001))
-udp_queue = Queue()
-tcp_queue = Queue()
-
-
-def tcp_queue_manager():
-    global multiplayer
-    while True:
-        data = tcp_queue.get()
-        try:
-            tcp_socket.send(data)
-        except ConnectionResetError:
-            multiplayer = False
-        tcp_queue.task_done()
-
-
-def udp_queue_manager():
-    while True:
-        data = udp_queue.get()
-        try:
-            udp_socket.sendto(data, udp_address)
-        except ConnectionResetError:
-            print('err send')
-        udp_queue.task_done()
+network.setup_connection(None if len(argv) == 1 else argv[1])
 
 
 def movement_handler():
@@ -107,42 +44,9 @@ def movement_handler():
         pos_x, pos_y = int((pos_x / scr_width) * win_width), int((pos_y / scr_height) * win_height)
         if player.x != pos_x or player.y != pos_y:
             player.move(pos_x, pos_y)
-            if multiplayer:
-                udp_queue.put('{},{},{}$'.format(0, player.x, player.y).encode())
+            if network.multiplayer:
+                network.udp_queue.put('{},{},{}$'.format(0, player.x, player.y).encode())
         time.sleep(0.02)
-
-
-def receive_udp():
-    while True:
-        try:
-            data_list = udp_socket.recvfrom(1024)[0].decode()[:-1].split('$')
-            for i, data in enumerate(data_list):
-                data = data.split(',')
-                if data[0] == '0':
-                    ally.move(int(data[1]), int(data[2]))
-                elif data[0] == '1':
-                    shot = ally.shoot()
-                    if shot is not None:
-                        shots.append(shot)
-        except ConnectionResetError:
-            pass
-
-
-def receive_tcp():
-    global multiplayer
-    while True:
-        if multiplayer:
-            try:
-                data_list = tcp_socket.recv(1024)[0].decode()[:-1].split('$')
-                for i, data in enumerate(data_list):
-                    if data[0] == '0':
-                        pass
-                    elif data[0] == '1':
-                        pass
-            except ConnectionResetError:
-                multiplayer = False
-        else:
-            time.sleep(1)
 
 
 def move_shot(shot):
@@ -182,12 +86,30 @@ def cool_down():
     while True:
         player.heat.change_heat(heat_up=False)
         ally.heat.change_heat(heat_up=False)
-        time.sleep(0.7)
+        time.sleep(0.07)
 
 
+def network_manager():
+    while True:
+        data = network.action_queue.get()
+        if data[0] == '0':
+            ally.move(int(data[1]), int(data[2]))
+        elif data[0] == '1':
+            ally_shot = ally.shoot()
+            if ally_shot is not None:
+                shots.append(ally_shot)
+        network.action_queue.task_done()
 # start threads
-for func in [shots_manager, movement_handler, receive_udp, receive_tcp, udp_queue_manager, tcp_queue_manager,
-             move_enemies, move_eggs, cool_down]:
+
+
+for func in [
+    shots_manager,
+    movement_handler,
+    move_enemies,
+    move_eggs,
+    cool_down,
+    network_manager,
+             ]:
     t = Thread(target=func)
     t.daemon = True
     t.start()
@@ -195,13 +117,13 @@ for func in [shots_manager, movement_handler, receive_udp, receive_tcp, udp_queu
 while True:
     ch = getch()
     if ch == b' ':
-        shot = player.shoot()
+        shot = player.shoot(heat_up=True)
         if shot is not None:
             shots.append(shot)
-            if multiplayer:
-                udp_queue.put('{}$'.format(1).encode())
+            if network.multiplayer:
+                network.udp_queue.put('{}$'.format(1).encode())
     elif ch == b'\x03':
-        udp_socket.close()
-        tcp_socket.close()
+        network.udp_socket.close()
+        network.tcp_socket.close()
         exit()
-    time.sleep(0.04)
+    time.sleep(0.03)
