@@ -1,0 +1,16 @@
+D:\Dropbox\Projects\ConsoleApplication31\ConsoleApplication31\bin\Debug\ConsoleApplication31.exe.config
+D:\Dropbox\Projects\ConsoleApplication31\ConsoleApplication31\bin\Debug\ConsoleApplication31.exe
+D:\Dropbox\Projects\ConsoleApplication31\ConsoleApplication31\bin\Debug\ConsoleApplication31.pdb
+D:\Dropbox\Projects\ConsoleApplication31\ConsoleApplication31\obj\Debug\Interop.WMPLib.dll
+D:\Dropbox\Projects\ConsoleApplication31\ConsoleApplication31\obj\Debug\ConsoleApplication31.csproj.ResolveComReference.cache
+D:\Dropbox\Projects\ConsoleApplication31\ConsoleApplication31\obj\Debug\ConsoleApplication31.exe
+D:\Dropbox\Projects\ConsoleApplication31\ConsoleApplication31\obj\Debug\ConsoleApplication31.pdb
+D:\Dropbox\Projects\ConsoleApplication31\ConsoleApplication31\obj\Debug\ConsoleApplication31.csprojResolveAssemblyReference.cache
+F:\ConsoleApplication31\ConsoleApplication31\bin\Debug\ConsoleApplication31.exe.config
+F:\ConsoleApplication31\ConsoleApplication31\obj\Debug\Interop.WMPLib.dll
+F:\ConsoleApplication31\ConsoleApplication31\obj\Debug\ConsoleApplication31.csproj.ResolveComReference.cache
+F:\ConsoleApplication31\ConsoleApplication31\obj\Debug\ConsoleApplication31.exe
+F:\ConsoleApplication31\ConsoleApplication31\obj\Debug\ConsoleApplication31.pdb
+F:\ConsoleApplication31\ConsoleApplication31\bin\Debug\ConsoleApplication31.exe
+F:\ConsoleApplication31\ConsoleApplication31\bin\Debug\ConsoleApplication31.pdb
+F:\ConsoleApplication31\ConsoleApplication31\obj\Debug\ConsoleApplication31.csprojResolveAssemblyReference.cache
