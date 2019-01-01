@@ -1,13 +1,13 @@
 # SpaceInvaders
 
-##### A cool ascii-art, console based shooting game!
+### A cool ascii-art, console based shooting game!
 ![screenshot](https://i.imgur.com/dfQK23M.gif)
 ![screenshot](https://i.imgur.com/9qka2FK.gif)
 # New Features!
   - Multiplayer in LAN
 
 # Versions
- - C# (more levels and sound efects)
+ - C# (more levels and sound effects)
  - Python3 (basic, but with multiplayer)
 
 # How to use
